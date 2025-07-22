@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Math Speed Test</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f6f8;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    #timer {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      font-size: 1.2em;
+      color: #333;
+      background: #e3e3e3;
+      padding: 5px 10px;
+      border-radius: 8px;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+
+    .section-title {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 5px;
+    }
+
+    .questions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+    }
+
+    .question {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+
+    .question input {
+      width: 80px;
+      padding: 5px;
+      margin-top: 5px;
+      font-size: 1em;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      margin-top: 20px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+    }
+
+    #results {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 1.1em;
+      text-align: center;
+    }
+
+    #leaderboard {
+      margin-top: 30px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    #leaderboard h3 {
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f0f0f0;
+    }
+
+    @media (max-width: 600px) {
+      .controls {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="timer">Time: 0s</div>
+  <div class="container">
+    <h1>🧠 Math Speed Test</h1>
+
+    <div class="controls">
+      <label><input type="checkbox" id="negativeMarking" /> Negative Marking (-0.5 per wrong)</label>
+      <button onclick="restartTest()">Take Test Again</button>
+    </div>
+
+    <div style="text-align: center;">
+      <button onclick="startTest()" id="startBtn">Start Test</button>
+    </div>
+
+    <div id="questions-container">
+      <div class="section-title">➕ Addition Problems</div>
+      <div class="questions" id="addition-container"></div>
+
+      <div class="section-title">✖️ Multiplication Problems</div>
+      <div class="questions" id="multiplication-container"></div>
+    </div>
+
+    <div style="text-align: center;">
+      <button onclick="submitAnswers()" id="submitBtn" disabled>Submit Test</button>
+    </div>
+
+    <div id="results"></div>
+
+    <div id="leaderboard">
+      <h3>📊 Leaderboard (Recent Attempts)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Score</th>
+            <th>Time (s)</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const additionContainer = document.getElementById("addition-container");
+    const multiplicationContainer = document.getElementById("multiplication-container");
+    let timer = 0;
+    let timerInterval;
+
+    function startTimer() {
+      timer = 0;
+      document.getElementById("timer").innerText = `Time: 0s`;
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timer++;
+        document.getElementById("timer").innerText = `Time: ${timer}s`;
+      }, 1000);
+    }
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateQuestions() {
+      additionContainer.innerHTML = "";
+      multiplicationContainer.innerHTML = "";
+
+      // Addition Questions
+      for (let i = 0; i < 20; i++) {
+        const a = getRandomInt(30, 99);
+        const b = getRandomInt(30, 99);
+        const q = createQuestion(i + 1, `${a} + ${b}`, (a + b).toFixed(2));
+        additionContainer.appendChild(q);
+      }
+
+      // Multiplication Questions
+      for (let i = 0; i < 20; i++) {
+        const a = getRandomInt(10, 99);
+        const b = (1.5 + i).toFixed(1);
+        const q = createQuestion(i + 21, `${a} × ${b}`, (a * b).toFixed(2));
+        multiplicationContainer.appendChild(q);
+      }
+    }
+
+    function createQuestion(index, text, answer) {
+      const div = document.createElement("div");
+      div.className = "question";
+      div.innerHTML = `
+        <div><strong>Q${index}:</strong> ${text}</div>
+        <input type="number" step="0.01" data-answer="${answer}" disabled />
+      `;
+      return div;
+    }
+
+    function enableInputs(enable = true) {
+      document.querySelectorAll(".question input").forEach(input => {
+        input.disabled = !enable;
+      });
+      document.getElementById("submitBtn").disabled = !enable;
+    }
+
+    function startTest() {
+      enableInputs(true);
+      startTimer();
+      document.getElementById("results").innerText = "";
+      document.getElementById("startBtn").disabled = true;
+    }
+
+    function submitAnswers() {
+      clearInterval(timerInterval);
+      const inputs = document.querySelectorAll(".question input");
+
+      let correct = 0;
+      let wrong = 0;
+      let attempted = 0;
+
+      inputs.forEach(input => {
+        const expected = parseFloat(input.dataset.answer);
+        const value = input.value.trim();
+
+        if (value === '') return; // unattempted
+
+        const given = parseFloat(value);
+        const isCorrect = Math.abs(expected - given) < 0.01;
+
+        attempted++;
+
+        if (isCorrect) {
+          correct++;
+        } else {
+          wrong++;
+        }
+      });
+
+      const negativeMarking = document.getElementById("negativeMarking").checked;
+      const penalty = negativeMarking ? 0.5 * wrong : 0;
+      let score = correct - penalty;
+
+      const total = inputs.length;
+      const resultText = `✅ Attempted: ${attempted}, Correct: ${correct}, Wrong: ${wrong}${negativeMarking ? `, Penalty: -${penalty.toFixed(2)}` : ''}.
+      \n🏁 Final Score: ${score.toFixed(2)} / ${total} in ${timer} seconds.`;
+
+      document.getElementById("results").innerText = resultText;
+
+      const history = JSON.parse(localStorage.getItem("math_results") || "[]");
+      history.unshift({
+        date: new Date().toLocaleString(),
+        score: score.toFixed(2),
+        time: timer
+      });
+      localStorage.setItem("math_results", JSON.stringify(history.slice(0, 10)));
+      updateLeaderboard();
+    }
+
+    function updateLeaderboard() {
+      const leaderboard = document.getElementById("leaderboard-body");
+      leaderboard.innerHTML = "";
+      const history = JSON.parse(localStorage.getItem("math_results") || "[]");
+      history.forEach(entry => {
+        const row = `<tr><td>${entry.date}</td><td>${entry.score}</td><td>${entry.time}</td></tr>`;
+        leaderboard.innerHTML += row;
+      });
+    }
+
+    function restartTest() {
+      generateQuestions();
+      enableInputs(false);
+      document.getElementById("startBtn").disabled = false;
+      document.getElementById("results").innerText = "";
+    }
+
+    // Initialize
+    generateQuestions();
+    updateLeaderboard();
+    enableInputs(false);
+  </script>
+</body>
+</html>
